@@ -10,7 +10,8 @@ page-turn engine of [Pagelume](https://github.com/attasakj-blip/pdf-flip-reader)
   The reader can pick a phone voice for each character (saved); each character
   also has its own pitch and speed. The line being read is
   highlighted, and the page turns by itself at the end (can be switched off).
-- **Pictures:** drawn from simple shapes by `tools/make_art.py`, so they are ours to use.
+- **Pictures:** the owner's artwork in `tools/src/turnip/`, cut and sized for the page by
+  `tools/prepare_pictures.py` (the old shape drawings in `tools/make_art.py` are no longer used).
 
 ## Adding a story
 1. Make a folder `assets/stories/<id>/` with `story.json` (see the turnip one)
