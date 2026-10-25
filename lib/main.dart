@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'home_screen.dart';
 import 'narrator.dart';
 import 'settings.dart';
+import 'ui_text.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,7 +13,8 @@ Future<void> main() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   final settings = await Settings.load();
-  runApp(TalesApp(settings: settings, narrator: Narrator()));
+  final narrator = Narrator()..chosen = (story, c) => settings.voiceFor(story.id, c.id);
+  runApp(TalesApp(settings: settings, narrator: narrator));
 }
 
 class TalesApp extends StatelessWidget {
@@ -22,15 +25,21 @@ class TalesApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Pagelume Tales',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: const Color(0xFF7B3FA0),
-        useMaterial3: true,
-        fontFamily: 'Mali',
+    return ListenableBuilder(
+      listenable: settings,
+      builder: (context, _) => MaterialApp(
+        title: T.appName,
+        debugShowCheckedModeBanner: false,
+        locale: T.localeOf(textFor(settings.uiLang).code),
+        supportedLocales: T.codes.map(T.localeOf),
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(colorSchemeSeed: const Color(0xFF2A6FD6), useMaterial3: true, fontFamily: 'Mali'),
+        home: HomeScreen(settings: settings, narrator: narrator),
       ),
-      home: HomeScreen(settings: settings, narrator: narrator),
     );
   }
 }

@@ -1,154 +1,259 @@
 {
-  "id": "turnip",
-  "title": {"th": "หัวผักกาดยักษ์", "en": "The Enormous Turnip"},
-  "origin": {"th": "นิทานพื้นบ้านรัสเซีย", "en": "A Russian folk tale"},
-  "moral": {
-    "th": "เมื่อทุกคนร่วมแรงร่วมใจ เรื่องยากก็สำเร็จได้ และแรงเล็กที่สุดก็มีความหมาย",
-    "en": "When we all work together, hard things become possible, and even the smallest help matters."
+ "id": "turnip",
+ "title": "The Enormous Turnip",
+ "origin": "A Russian folk tale",
+ "moral": "When we all work together, hard things become possible, and even the smallest help matters.",
+ "characters": {
+  "narrator": {
+   "name": "Narrator",
+   "voice": "middleWoman",
+   "gender": "female",
+   "pitch": 1.0,
+   "rate": 0.45,
+   "color": "#5d4037"
   },
-  "characters": {
-    "narrator": {"name": {"th": "ผู้บรรยาย", "en": "Narrator"}, "voice": "middleWoman", "gender": "female", "pitch": 1.0, "rate": 0.45, "color": "#5d4037"},
-    "everyone": {"name": {"th": "ทุกคน", "en": "Everyone"}, "voice": "middleWoman", "gender": "female", "pitch": 1.1, "rate": 0.5, "color": "#6a1b9a"},
-    "grandpa": {"name": {"th": "ตา", "en": "Grandpa"}, "voice": "oldMan", "gender": "male", "pitch": 0.7, "rate": 0.38, "color": "#1565c0"},
-    "grandma": {"name": {"th": "ยาย", "en": "Grandma"}, "voice": "oldWoman", "gender": "female", "pitch": 0.85, "rate": 0.38, "color": "#c62828"},
-    "girl": {"name": {"th": "หลานสาว", "en": "Granddaughter"}, "voice": "girl", "gender": "female", "pitch": 1.45, "rate": 0.5, "color": "#ad1457"},
-    "dog": {"name": {"th": "เจ้าด่าง", "en": "Spot"}, "voice": "middleMan", "gender": "male", "pitch": 0.8, "rate": 0.48, "color": "#6d4c41"},
-    "cat": {"name": {"th": "เหมียว", "en": "Kitty"}, "voice": "youngWoman", "gender": "female", "pitch": 1.2, "rate": 0.48, "color": "#ef6c00"},
-    "mouse": {"name": {"th": "หนูน้อย", "en": "Little Mouse"}, "voice": "boy", "gender": "male", "pitch": 1.6, "rate": 0.55, "color": "#546e7a"}
+  "everyone": {
+   "name": "Everyone",
+   "voice": "middleWoman",
+   "gender": "female",
+   "pitch": 1.1,
+   "rate": 0.5,
+   "color": "#6a1b9a"
   },
-  "pages": [
+  "grandpa": {
+   "name": "Grandpa",
+   "voice": "oldMan",
+   "gender": "male",
+   "pitch": 0.7,
+   "rate": 0.38,
+   "color": "#1565c0"
+  },
+  "grandma": {
+   "name": "Grandma",
+   "voice": "oldWoman",
+   "gender": "female",
+   "pitch": 0.85,
+   "rate": 0.38,
+   "color": "#c62828"
+  },
+  "girl": {
+   "name": "Granddaughter",
+   "voice": "girl",
+   "gender": "female",
+   "pitch": 1.45,
+   "rate": 0.5,
+   "color": "#ad1457"
+  },
+  "dog": {
+   "name": "Spot",
+   "voice": "middleMan",
+   "gender": "male",
+   "pitch": 0.8,
+   "rate": 0.48,
+   "color": "#6d4c41"
+  },
+  "cat": {
+   "name": "Kitty",
+   "voice": "youngWoman",
+   "gender": "female",
+   "pitch": 1.2,
+   "rate": 0.48,
+   "color": "#ef6c00"
+  },
+  "mouse": {
+   "name": "Little Mouse",
+   "voice": "boy",
+   "gender": "male",
+   "pitch": 1.6,
+   "rate": 0.55,
+   "color": "#546e7a"
+  }
+ },
+ "pages": [
+  {
+   "image": "p00.png",
+   "cover": true,
+   "lines": [
     {
-      "image": "p00.png",
-      "cover": true,
-      "th": [{"who": "narrator", "text": "หัวผักกาดยักษ์"}],
-      "en": [{"who": "narrator", "text": "The Enormous Turnip"}]
-    },
-    {
-      "image": "p01.png",
-      "th": [
-        {"who": "narrator", "text": "ในหมู่บ้านเล็ก ๆ แห่งหนึ่ง มีคุณตาใจดีอาศัยอยู่ เช้าวันหนึ่ง คุณตาปลูกเมล็ดหัวผักกาดลงในสวน"},
-        {"who": "grandpa", "text": "โตเร็ว ๆ นะ หัวผักกาดน้อย โตให้หวาน โตให้แข็งแรง"}
-      ],
-      "en": [
-        {"who": "narrator", "text": "In a little village lived a kind old grandpa. One spring morning, he planted a turnip seed in his garden."},
-        {"who": "grandpa", "text": "Grow, little turnip, grow! Grow sweet and grow strong!"}
-      ]
-    },
-    {
-      "image": "p02.png",
-      "th": [
-        {"who": "narrator", "text": "คุณตารดน้ำทุกวัน หัวผักกาดก็โตขึ้น โตขึ้น และโตขึ้นอีก จนใหญ่ยักษ์ยิ่งกว่าอะไรที่เคยเห็นมา"},
-        {"who": "grandpa", "text": "โอ้โฮ! หัวผักกาดใหญ่ขนาดนี้ ต้องอร่อยมากแน่ ๆ"}
-      ],
-      "en": [
-        {"who": "narrator", "text": "Grandpa watered it every day. The turnip grew, and grew, and grew, until it was bigger than anything he had ever seen."},
-        {"who": "grandpa", "text": "My, oh my! A turnip this big must taste wonderful!"}
-      ]
-    },
-    {
-      "image": "p03.png",
-      "th": [
-        {"who": "narrator", "text": "คุณตาจับใบหัวผักกาดไว้แน่น แล้วออกแรงดึง"},
-        {"who": "grandpa", "text": "ฮึบ! ฮึบ! ดึง!"},
-        {"who": "narrator", "text": "แต่หัวผักกาดไม่ขยับเลยสักนิด"},
-        {"who": "grandpa", "text": "ยายจ๋า มาช่วยตาหน่อย!"}
-      ],
-      "en": [
-        {"who": "narrator", "text": "Grandpa held the leaves tight and pulled."},
-        {"who": "grandpa", "text": "Heave-ho! Heave-ho!"},
-        {"who": "narrator", "text": "But the turnip did not move, not even a little."},
-        {"who": "grandpa", "text": "Grandma! Come and help me, please!"}
-      ]
-    },
-    {
-      "image": "p04.png",
-      "th": [
-        {"who": "narrator", "text": "คุณยายวิ่งมา จับเอวคุณตาไว้"},
-        {"who": "grandma", "text": "มาแล้วจ้ะ ตาดึงหัวผักกาด ยายดึงตา พร้อมนะ!"},
-        {"who": "narrator", "text": "ฮึบ! ฮึบ! ดึง! แต่หัวผักกาดก็ยังไม่ขยับ"},
-        {"who": "grandma", "text": "หลานจ๋า มาช่วยตากับยายหน่อย!"}
-      ],
-      "en": [
-        {"who": "narrator", "text": "Grandma came running and held on to Grandpa."},
-        {"who": "grandma", "text": "Here I am! Grandpa pulls the turnip, Grandma pulls Grandpa. Ready?"},
-        {"who": "narrator", "text": "Heave-ho! Heave-ho! But the turnip still did not move."},
-        {"who": "grandma", "text": "Granddaughter! Come and help us, dear!"}
-      ]
-    },
-    {
-      "image": "p05.png",
-      "th": [
-        {"who": "narrator", "text": "หลานสาวรีบวิ่งมาจับเอวคุณยาย"},
-        {"who": "girl", "text": "หนูมาช่วยแล้วค่ะ!"},
-        {"who": "narrator", "text": "ตาดึงหัวผักกาด ยายดึงตา หลานดึงยาย ฮึบ! ฮึบ! ดึง! หัวผักกาดก็ยังไม่ขยับ"},
-        {"who": "girl", "text": "เจ้าด่าง มาช่วยหน่อยเร็ว!"}
-      ],
-      "en": [
-        {"who": "narrator", "text": "The granddaughter ran over and held on to Grandma."},
-        {"who": "girl", "text": "I'm here to help!"},
-        {"who": "narrator", "text": "Grandpa pulls the turnip, Grandma pulls Grandpa, the girl pulls Grandma. Heave-ho! Heave-ho! Still the turnip did not move."},
-        {"who": "girl", "text": "Spot! Come and help us, quick!"}
-      ]
-    },
-    {
-      "image": "p06.png",
-      "th": [
-        {"who": "narrator", "text": "เจ้าด่างกระดิกหางวิ่งมา งับกระโปรงหลานสาวไว้"},
-        {"who": "dog", "text": "โฮ่ง! โฮ่ง! ผมช่วยเองครับ!"},
-        {"who": "narrator", "text": "ฮึบ! ฮึบ! ดึง! หัวผักกาดก็ยังไม่ขยับ"},
-        {"who": "dog", "text": "เหมียว! มาช่วยกันหน่อย!"}
-      ],
-      "en": [
-        {"who": "narrator", "text": "Spot the dog wagged his tail, ran over, and held on to the girl's skirt."},
-        {"who": "dog", "text": "Woof! Woof! I'll help!"},
-        {"who": "narrator", "text": "Heave-ho! Heave-ho! Still the turnip did not move."},
-        {"who": "dog", "text": "Kitty! Come and help us!"}
-      ]
-    },
-    {
-      "image": "p07.png",
-      "th": [
-        {"who": "narrator", "text": "เหมียวเดินย่องมา จับหางเจ้าด่างไว้"},
-        {"who": "cat", "text": "เมี้ยว ได้เลยจ้ะ"},
-        {"who": "narrator", "text": "ฮึบ! ฮึบ! ดึง! หัวผักกาดก็ยังไม่ขยับ ทุกคนเหนื่อยจนหอบ ทันใดนั้น หนูน้อยตัวหนึ่งก็โผล่ออกมาจากรู"},
-        {"who": "mouse", "text": "ผมตัวเล็กนิดเดียว จะช่วยได้ไหมครับ"},
-        {"who": "cat", "text": "ได้สิจ๊ะ แรงเล็กแค่ไหนก็มีความหมาย!"}
-      ],
-      "en": [
-        {"who": "narrator", "text": "Kitty tiptoed over and held on to Spot's tail."},
-        {"who": "cat", "text": "Meow! Of course I will."},
-        {"who": "narrator", "text": "Heave-ho! Heave-ho! Still the turnip did not move. Everyone was out of breath. Just then, a tiny mouse peeked out of its hole."},
-        {"who": "mouse", "text": "I'm very small. Can I help too?"},
-        {"who": "cat", "text": "Of course! Every little bit of help counts!"}
-      ]
-    },
-    {
-      "image": "p08.png",
-      "th": [
-        {"who": "narrator", "text": "หนูน้อยจับหางเหมียวไว้ ตาดึงหัวผักกาด ยายดึงตา หลานดึงยาย เจ้าด่างดึงหลาน เหมียวดึงเจ้าด่าง หนูน้อยดึงเหมียว"},
-        {"who": "everyone", "text": "ฮึบ! ฮึบ! ดึงงง!"},
-        {"who": "narrator", "text": "ป๊อก! หัวผักกาดยักษ์หลุดออกมา ทุกคนล้มกลิ้งไปกองรวมกัน แล้วก็หัวเราะกันใหญ่"}
-      ],
-      "en": [
-        {"who": "narrator", "text": "The mouse held on to Kitty's tail. Grandpa pulls the turnip, Grandma pulls Grandpa, the girl pulls Grandma, Spot pulls the girl, Kitty pulls Spot, and the mouse pulls Kitty."},
-        {"who": "everyone", "text": "Heave-ho! Heave-ho! HEAVE-HO!"},
-        {"who": "narrator", "text": "POP! Out came the enormous turnip! Everyone tumbled down in a heap, laughing and laughing."}
-      ]
-    },
-    {
-      "image": "p09.png",
-      "th": [
-        {"who": "narrator", "text": "เย็นวันนั้น คุณยายต้มซุปหัวผักกาดหม้อใหญ่ ทุกคนได้กินกันอิ่มหนำ"},
-        {"who": "grandpa", "text": "ขอบใจทุกคนนะ โดยเฉพาะหนูน้อย ถ้าไม่มีแรงสุดท้ายของเธอ เราคงดึงไม่สำเร็จ"},
-        {"who": "mouse", "text": "เย้! ผมก็ช่วยได้!"},
-        {"who": "narrator", "moral": true, "text": "ข้อคิด: เมื่อทุกคนร่วมแรงร่วมใจ เรื่องยากก็สำเร็จได้ และแรงเล็กที่สุดก็มีความหมาย"}
-      ],
-      "en": [
-        {"who": "narrator", "text": "That evening, Grandma cooked a big pot of turnip soup, and everyone ate until they were full."},
-        {"who": "grandpa", "text": "Thank you, everyone, and especially you, little mouse. Without your help, we never could have done it."},
-        {"who": "mouse", "text": "Hooray! I helped too!"},
-        {"who": "narrator", "moral": true, "text": "Moral: When we all work together, hard things become possible, and even the smallest help matters."}
-      ]
+     "who": "narrator",
+     "text": "The Enormous Turnip"
     }
-  ]
+   ]
+  },
+  {
+   "image": "p01.png",
+   "lines": [
+    {
+     "who": "narrator",
+     "text": "In a little village lived a kind old grandpa. One spring morning, he planted a turnip seed in his garden."
+    },
+    {
+     "who": "grandpa",
+     "text": "Grow, little turnip, grow! Grow sweet and grow strong!"
+    }
+   ]
+  },
+  {
+   "image": "p02.png",
+   "lines": [
+    {
+     "who": "narrator",
+     "text": "Grandpa watered it every day. The turnip grew, and grew, and grew, until it was bigger than anything he had ever seen."
+    },
+    {
+     "who": "grandpa",
+     "text": "My, oh my! A turnip this big must taste wonderful!"
+    }
+   ]
+  },
+  {
+   "image": "p03.png",
+   "lines": [
+    {
+     "who": "narrator",
+     "text": "Grandpa held the leaves tight and pulled."
+    },
+    {
+     "who": "grandpa",
+     "text": "Heave-ho! Heave-ho!"
+    },
+    {
+     "who": "narrator",
+     "text": "But the turnip did not move, not even a little."
+    },
+    {
+     "who": "grandpa",
+     "text": "Grandma! Come and help me, please!"
+    }
+   ]
+  },
+  {
+   "image": "p04.png",
+   "lines": [
+    {
+     "who": "narrator",
+     "text": "Grandma came running and held on to Grandpa."
+    },
+    {
+     "who": "grandma",
+     "text": "Here I am! Grandpa pulls the turnip, Grandma pulls Grandpa. Ready?"
+    },
+    {
+     "who": "narrator",
+     "text": "Heave-ho! Heave-ho! But the turnip still did not move."
+    },
+    {
+     "who": "grandma",
+     "text": "Granddaughter! Come and help us, dear!"
+    }
+   ]
+  },
+  {
+   "image": "p05.png",
+   "lines": [
+    {
+     "who": "narrator",
+     "text": "The granddaughter ran over and held on to Grandma."
+    },
+    {
+     "who": "girl",
+     "text": "I'm here to help!"
+    },
+    {
+     "who": "narrator",
+     "text": "Grandpa pulls the turnip, Grandma pulls Grandpa, the girl pulls Grandma. Heave-ho! Heave-ho! Still the turnip did not move."
+    },
+    {
+     "who": "girl",
+     "text": "Spot! Come and help us, quick!"
+    }
+   ]
+  },
+  {
+   "image": "p06.png",
+   "lines": [
+    {
+     "who": "narrator",
+     "text": "Spot the dog wagged his tail, ran over, and held on to the girl's skirt."
+    },
+    {
+     "who": "dog",
+     "text": "Woof! Woof! I'll help!"
+    },
+    {
+     "who": "narrator",
+     "text": "Heave-ho! Heave-ho! Still the turnip did not move."
+    },
+    {
+     "who": "dog",
+     "text": "Kitty! Come and help us!"
+    }
+   ]
+  },
+  {
+   "image": "p07.png",
+   "lines": [
+    {
+     "who": "narrator",
+     "text": "Kitty tiptoed over and held on to Spot's tail."
+    },
+    {
+     "who": "cat",
+     "text": "Meow! Of course I will."
+    },
+    {
+     "who": "narrator",
+     "text": "Heave-ho! Heave-ho! Still the turnip did not move. Everyone was out of breath. Just then, a tiny mouse peeked out of its hole."
+    },
+    {
+     "who": "mouse",
+     "text": "I'm very small. Can I help too?"
+    },
+    {
+     "who": "cat",
+     "text": "Of course! Every little bit of help counts!"
+    }
+   ]
+  },
+  {
+   "image": "p08.png",
+   "lines": [
+    {
+     "who": "narrator",
+     "text": "The mouse held on to Kitty's tail. Grandpa pulls the turnip, Grandma pulls Grandpa, the girl pulls Grandma, Spot pulls the girl, Kitty pulls Spot, and the mouse pulls Kitty."
+    },
+    {
+     "who": "everyone",
+     "text": "Heave-ho! Heave-ho! HEAVE-HO!"
+    },
+    {
+     "who": "narrator",
+     "text": "POP! Out came the enormous turnip! Everyone tumbled down in a heap, laughing and laughing."
+    }
+   ]
+  },
+  {
+   "image": "p09.png",
+   "lines": [
+    {
+     "who": "narrator",
+     "text": "That evening, Grandma cooked a big pot of turnip soup, and everyone ate until they were full."
+    },
+    {
+     "who": "grandpa",
+     "text": "Thank you, everyone, and especially you, little mouse. Without your help, we never could have done it."
+    },
+    {
+     "who": "mouse",
+     "text": "Hooray! I helped too!"
+    },
+    {
+     "who": "narrator",
+     "moral": true,
+     "text": "Moral: When we all work together, hard things become possible, and even the smallest help matters."
+    }
+   ]
+  }
+ ],
+ "pageAspect": 1.0
 }

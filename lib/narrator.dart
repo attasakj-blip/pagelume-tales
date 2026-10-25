@@ -5,7 +5,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 import 'story.dart';
 
-/// A voice installed on the phone, as the speech engine reports it.
+/// An English voice installed on the phone, as the speech engine reports it.
 class DeviceVoice {
   DeviceVoice(this.name, this.locale, {required this.male, required this.offline});
   final String name;
@@ -14,39 +14,45 @@ class DeviceVoice {
   final bool offline;
 
   Map<String, String> get asMap => {'name': name, 'locale': locale};
+
+  /// Accent shown to the reader: US, UK, AU, IN, ...
+  String get region {
+    final p = locale.replaceAll('_', '-').split('-');
+    final r = p.length > 1 ? p[1].toUpperCase() : 'EN';
+    return r == 'GB' ? 'UK' : r;
+  }
 }
 
 /// Google's speech engine names its voices with short codes; these are the
 /// male ones (the rest are female). Other engines often put "male" in the name.
-const _maleCodes = {
-  // English (US, UK, Australia, India)
-  'iol', 'iom', 'tpd', 'gbb', 'gbd', 'rjs', 'aub', 'aud', 'end',
-  // Thai has no male Google voice yet, but list future ones here.
-};
+const _maleCodes = {'iol', 'iom', 'tpd', 'gbb', 'gbd', 'rjs', 'aub', 'aud', 'end'};
 
 bool guessMale(String name, String features) {
   final n = name.toLowerCase();
   final f = features.toLowerCase();
-  if (f.contains('gender=male') || f.contains('male') && !f.contains('female')) return true;
+  if (f.contains('gender=male')) return true;
+  if (f.contains('gender=female')) return false;
   if (RegExp(r'(^|[^e])male').hasMatch(n)) return true;
   final m = RegExp(r'-x-([a-z]{3})').firstMatch(n);
   return m != null && _maleCodes.contains(m.group(1));
 }
 
-/// Reads story lines aloud with the phone's own speech engine (free, works
-/// offline once the language is installed). Each character gets its own
-/// voice where the phone has one, and its own pitch and speed, so the
-/// grandpa sounds deeper and slower than the mouse.
+/// Reads story lines aloud with the phone's own English speech engine (free,
+/// works offline). Each character speaks with the voice the reader picked for
+/// them, or an automatic one of the right gender, and with its own pitch and
+/// speed, so the grandpa sounds deeper and slower than the mouse.
 class Narrator extends ChangeNotifier {
-  Narrator({FlutterTts? tts}) : _tts = tts ?? FlutterTts();
+  Narrator({FlutterTts? tts, this.chosen}) : _tts = tts ?? FlutterTts();
 
   final FlutterTts _tts;
+
+  /// The voice name the reader picked for a character, if any.
+  String? Function(Story story, Character c)? chosen;
+
   bool _ready = false;
-  final Map<Lang, List<DeviceVoice>> _voices = {};
-  final Map<Lang, bool> _available = {};
-  final Map<(Lang, String), DeviceVoice?> _assigned = {};
+  List<DeviceVoice> _voices = [];
+  bool? _available;
   int _session = 0;
-  bool speaking = false;
 
   Future<void> _init() async {
     if (_ready) return;
@@ -54,63 +60,77 @@ class Narrator extends ChangeNotifier {
     try {
       await _tts.awaitSpeakCompletion(true);
       final raw = await _tts.getVoices;
+      final list = <DeviceVoice>[];
       for (final v in (raw as List? ?? const [])) {
         final m = Map<String, dynamic>.from(v as Map);
         final name = '${m['name'] ?? ''}';
         final locale = '${m['locale'] ?? ''}';
         final features = '${m['features'] ?? ''}${m['gender'] == null ? '' : '\tgender=${m['gender']}'}';
-        if (features.contains('notInstalled')) continue;
-        final lang = locale.toLowerCase().startsWith('th') ? Lang.th : (locale.toLowerCase().startsWith('en') ? Lang.en : null);
-        if (lang == null) continue;
-        _voices.putIfAbsent(lang, () => []).add(
-          DeviceVoice(name, locale, male: guessMale(name, features), offline: m['network_required'] != '1'),
-        );
+        if (features.contains('notInstalled') || !locale.toLowerCase().startsWith('en')) continue;
+        list.add(DeviceVoice(name, locale, male: guessMale(name, features), offline: m['network_required'] != '1'));
       }
-      for (final l in Lang.values) {
-        // Prefer the main accent (US English / Thailand Thai), then offline voices.
-        _voices[l]?.sort((a, b) {
-          int score(DeviceVoice v) =>
-              (v.locale.toLowerCase().replaceAll('_', '-') == l.ttsLocale.toLowerCase() ? 0 : 2) + (v.offline ? 0 : 1);
-          return score(a).compareTo(score(b));
-        });
-      }
+      // Voices that work without internet are enough; keep online ones only
+      // if the phone has nothing else.
+      final offline = list.where((v) => v.offline).toList();
+      _voices = offline.isNotEmpty ? offline : list;
+      int rank(DeviceVoice v) => const ['US', 'UK', 'AU', 'IN'].indexOf(v.region) & 0xFF;
+      _voices.sort((a, b) {
+        final r = rank(a).compareTo(rank(b));
+        if (r != 0) return r;
+        if (a.male != b.male) return a.male ? 1 : -1;
+        return a.name.compareTo(b.name);
+      });
     } catch (e) {
       debugPrint('Narrator: could not list voices: $e');
     }
   }
 
-  /// Whether the phone can speak [lang] at all.
-  Future<bool> canSpeak(Lang lang) async {
+  /// Whether the phone can speak English at all.
+  Future<bool> canSpeak() async {
     await _init();
-    final hit = _available[lang];
-    if (hit != null) return hit;
-    var ok = (_voices[lang]?.isNotEmpty ?? false);
+    if (_available != null) return _available!;
+    var ok = _voices.isNotEmpty;
     try {
-      final r = await _tts.isLanguageAvailable(lang.ttsLocale);
+      final r = await _tts.isLanguageAvailable(storyLocale);
       ok = ok || r == true || r == 1;
     } catch (_) {}
-    return _available[lang] = ok;
+    return _available = ok;
   }
 
-  /// Picks a phone voice for [c]: one of the right gender if there is one.
-  /// Characters of the same gender take turns through the voices, so with
-  /// several voices installed they don't all sound alike.
-  DeviceVoice? voiceFor(Story story, Character c, Lang lang) {
-    return _assigned.putIfAbsent((lang, '${story.id}/${c.id}'), () {
-      final all = _voices[lang] ?? const <DeviceVoice>[];
-      if (all.isEmpty) return null;
-      final best = all.where((v) => v.locale == all.first.locale).toList();
-      final same = best.where((v) => v.male == c.male).toList();
-      final pool = same.isNotEmpty ? same : best;
-      final peers = story.characters.values.where((o) => o.male == c.male).toList();
-      final i = peers.indexWhere((o) => o.id == c.id);
-      return pool[(i < 0 ? 0 : i) % pool.length];
-    });
+  /// English voices on the phone, US first, female before male.
+  Future<List<DeviceVoice>> voices() async {
+    await _init();
+    return _voices;
   }
 
-  /// When a character has to borrow a voice of the other gender (Thai phones
-  /// usually only have a female voice), push the pitch further so they still
-  /// sound like who they are.
+  /// A short, friendly name like "US · Male 2".
+  String label(DeviceVoice v, {required String male, required String female}) {
+    final same = _voices.where((o) => o.region == v.region && o.male == v.male).toList();
+    final n = same.indexOf(v) + 1;
+    return '${v.region} · ${v.male ? male : female}${same.length > 1 ? ' $n' : ''}';
+  }
+
+  /// The voice [c] will speak with: the reader's pick if it is still on the
+  /// phone, otherwise one of the right gender. Characters of the same gender
+  /// take turns through the main accent's voices so they don't all sound alike.
+  DeviceVoice? voiceFor(Story story, Character c, {bool automatic = false}) {
+    if (_voices.isEmpty) return null;
+    final pick = automatic ? null : chosen?.call(story, c);
+    if (pick != null) {
+      for (final v in _voices) {
+        if (v.name == pick) return v;
+      }
+    }
+    final main = _voices.where((v) => v.region == _voices.first.region).toList();
+    final same = main.where((v) => v.male == c.male).toList();
+    final pool = same.isNotEmpty ? same : main;
+    final peers = story.characters.values.where((o) => o.male == c.male && o.id != 'everyone').toList();
+    final i = peers.indexWhere((o) => o.id == c.id);
+    return pool[(i < 0 ? 0 : i) % pool.length];
+  }
+
+  /// When a character has to borrow a voice of the other gender, push the
+  /// pitch further so they still sound like who they are.
   double pitchFor(Character c, DeviceVoice? v) {
     var p = c.pitch;
     if (v != null && v.male != c.male) p *= c.male ? 0.85 : 1.15;
@@ -118,19 +138,18 @@ class Narrator extends ChangeNotifier {
   }
 
   /// Says one line. Returns false if it was cut short by [stop].
-  Future<bool> say(Story story, Line line, Lang lang) async {
+  Future<bool> say(Story story, Line line, {DeviceVoice? voice}) async {
     await _init();
     final session = _session;
+    final who = line.who == 'everyone' ? 'narrator' : line.who;
     final c = story.speaker(line.who);
-    final v = voiceFor(story, c, lang);
+    final v = voice ?? voiceFor(story, story.speaker(who));
     try {
-      await _tts.setLanguage(v?.locale ?? lang.ttsLocale);
+      await _tts.setLanguage(v?.locale ?? storyLocale);
       if (v != null) await _tts.setVoice(v.asMap);
       await _tts.setPitch(pitchFor(c, v));
       await _tts.setSpeechRate(c.rate);
       if (session != _session) return false;
-      speaking = true;
-      notifyListeners();
       await _tts.speak(line.text);
     } catch (e) {
       debugPrint('Narrator: $e');
@@ -141,17 +160,9 @@ class Narrator extends ChangeNotifier {
   /// Stops speaking at once; any [say] in progress reports it was cut short.
   Future<void> stop() async {
     _session++;
-    speaking = false;
-    notifyListeners();
     try {
       await _tts.stop();
     } catch (_) {}
-  }
-
-  /// Phone voices found for [lang] (for the voices sheet).
-  Future<List<DeviceVoice>> voices(Lang lang) async {
-    await _init();
-    return _voices[lang] ?? const [];
   }
 
   @override

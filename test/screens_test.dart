@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pagelume_tales/home_screen.dart';
 import 'package:pagelume_tales/narrator.dart';
@@ -13,6 +14,8 @@ import 'package:pagelume_tales/reader_screen.dart';
 import 'package:pagelume_tales/settings.dart';
 import 'package:pagelume_tales/story.dart';
 import 'package:pagelume_tales/story_pages.dart';
+import 'package:pagelume_tales/ui_strings.g.dart';
+import 'package:pagelume_tales/ui_text.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> _font(String family, List<String> files) async {
@@ -44,18 +47,36 @@ void main() {
     story = Story.parse('assets/stories/turnip', File('assets/stories/turnip/story.json').readAsStringSync());
   });
 
-  test('story has a picture and words in both languages on every page', () {
+  test('every page has a picture and words', () {
     expect(story.pages.length, 10);
     for (final p in story.pages) {
       expect(File('assets/stories/turnip/${p.image}').existsSync(), isTrue);
-      for (final l in Lang.values) {
-        expect(p.lines[l], isNotEmpty);
-        for (final line in p.lines[l]!) {
-          expect(story.characters.containsKey(line.who), isTrue, reason: line.who);
-        }
+      expect(p.lines, isNotEmpty);
+      for (final line in p.lines) {
+        expect(story.characters.containsKey(line.who), isTrue, reason: line.who);
       }
-      expect(p.lines[Lang.th]!.map((l) => l.who), p.lines[Lang.en]!.map((l) => l.who));
     }
+  });
+
+  test('menu words exist in all 23 languages', () {
+    expect(uiLanguageNames.length, 23);
+    for (final code in uiLanguageNames.keys) {
+      final t = T(code);
+      expect(t.listen, isNotEmpty);
+      expect(t.pages(9), contains('9'));
+    }
+    expect(T.codeFor(const Locale('th', 'TH')), 'th');
+    expect(T.codeFor(const Locale('zh', 'TW')), 'zh_Hant');
+    expect(T.codeFor(const Locale('sw')), 'en');
+  });
+
+  test('chosen voice is used and remembered', () async {
+    SharedPreferences.setMockInitialValues({});
+    final settings = await Settings.load();
+    settings.setVoice('turnip', 'grandpa', 'en-us-x-iom-local');
+    final again = await Settings.load();
+    expect(again.voiceFor('turnip', 'grandpa'), 'en-us-x-iom-local');
+    expect(again.voiceFor('turnip', 'grandma'), isNull);
   });
 
   test('male voices are recognised', () {
@@ -81,29 +102,36 @@ void main() {
       key: key,
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
+        locale: T.localeOf(settings.uiLang ?? 'en'),
+        supportedLocales: T.codes.map(T.localeOf),
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         theme: ThemeData(colorSchemeSeed: const Color(0xFF7B3FA0), useMaterial3: true, fontFamily: 'Mali'),
         home: home,
       ),
     );
 
     // Shelf (needs the cover asset; precache it from disk).
-    await tester.pumpWidget(app(HomeScreen(settings: settings, narrator: narrator, stories: [story])));
+    settings.uiLang = 'th';
+    final cover = FileImage(File('assets/stories/turnip/p00.png'));
+    await tester.pumpWidget(app(HomeScreen(settings: settings, narrator: narrator, stories: [story], cover: (_) => cover)));
     await tester.runAsync(() async {
-      final el = tester.element(find.byType(HomeScreen));
-      await precacheImage(FileImage(File('assets/stories/turnip/p00.png')), el);
+      await precacheImage(cover, tester.element(find.byType(HomeScreen)));
     });
     await tester.pumpAndSettle();
-    // Image.asset can't load in tests; the shelf shot is mainly for layout.
     await _shot(tester, key, 'shelf');
 
-    for (final (lang, page, hl) in [(Lang.th, 0, null), (Lang.th, 7, 3), (Lang.en, 7, null), (Lang.th, 9, null), (Lang.en, 4, 1)]) {
-      settings.lang = lang;
+    for (final (code, page, hl) in [('th', 0, null), ('ja', 7, 3), ('en', 9, null), ('ar', 4, 1)]) {
+      settings.uiLang = code;
       settings.setLastPage(story.id, page);
       await tester.pumpWidget(app(const SizedBox()));
       await tester.pumpWidget(app(ReaderScreen(story: story, settings: settings, narrator: narrator, pages: pages)));
       pages.highlight(hl == null ? null : page, hl ?? 0);
       await tester.pump();
-      await _shot(tester, key, 'spread_${page}_${lang.name}${hl == null ? '' : '_reading'}');
+      await _shot(tester, key, 'spread_${page}_$code${hl == null ? '' : '_reading'}');
     }
 
     // Mid-turn.

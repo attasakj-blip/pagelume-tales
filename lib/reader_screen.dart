@@ -37,7 +37,7 @@ class _ReaderScreenState extends State<ReaderScreen> with TickerProviderStateMix
 
   Settings get _settings => widget.settings;
   Story get _story => widget.story;
-  T get _t => T(_settings.lang);
+  T get _t => textFor(_settings.uiLang);
 
   // Page-turn state (same feel as Pagelume).
   BookLayout? _layout;
@@ -61,7 +61,6 @@ class _ReaderScreenState extends State<ReaderScreen> with TickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    _pages.setLang(_settings.lang);
     if (widget.pages == null) _pages.loadPictures();
     _anim = AnimationController(vsync: this)
       ..addListener(_tickAnim)
@@ -101,7 +100,7 @@ class _ReaderScreenState extends State<ReaderScreen> with TickerProviderStateMix
 
   Future<void> _startReading() async {
     final token = ++_readToken;
-    if (!await widget.narrator.canSpeak(_settings.lang)) {
+    if (!await widget.narrator.canSpeak()) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_t.noVoice), duration: const Duration(seconds: 8)));
       return;
@@ -110,10 +109,10 @@ class _ReaderScreenState extends State<ReaderScreen> with TickerProviderStateMix
     WakelockPlus.enable().catchError((_) {});
     while (mounted && token == _readToken) {
       final page = _index;
-      final lines = _story.pages[page].lines[_settings.lang] ?? const <Line>[];
+      final lines = _story.pages[page].lines;
       for (var i = 0; i < lines.length; i++) {
         _pages.highlight(page, i);
-        final finished = await widget.narrator.say(_story, lines[i], _settings.lang);
+        final finished = await widget.narrator.say(_story, lines[i]);
         if (!finished || token != _readToken || !mounted) return;
         await Future<void>.delayed(const Duration(milliseconds: 250));
         if (token != _readToken || !mounted) return;
@@ -136,15 +135,6 @@ class _ReaderScreenState extends State<ReaderScreen> with TickerProviderStateMix
     _pages.highlight(null);
     WakelockPlus.disable().catchError((_) {});
     if (mounted) setState(() => _playing = false);
-  }
-
-  void _setLang(Lang l) {
-    final wasPlaying = _playing;
-    _stopReading();
-    _settings.lang = l;
-    _pages.setLang(l);
-    setState(() {});
-    if (wasPlaying) _startReading();
   }
 
   // -------------------------------------------------------- page turns ---
@@ -289,7 +279,7 @@ class _ReaderScreenState extends State<ReaderScreen> with TickerProviderStateMix
               child: LayoutBuilder(
                 builder: (context, c) {
                   final size = Size(c.maxWidth, c.maxHeight);
-                  final layout = _layout = BookLayout.compute(size, 1.0, true);
+                  final layout = _layout = BookLayout.compute(size, _story.pageAspect, true);
                   return GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onHorizontalDragStart: (d) => _onDragStart(d.localPosition),
@@ -316,35 +306,20 @@ class _ReaderScreenState extends State<ReaderScreen> with TickerProviderStateMix
       padding: const EdgeInsets.fromLTRB(4, 4, 8, 0),
       child: Row(
         children: [
-          IconButton(
-            tooltip: t.back,
-            color: fg,
-            icon: const Icon(Icons.arrow_back_rounded),
+          TextButton.icon(
+            style: TextButton.styleFrom(foregroundColor: fg),
             onPressed: () => Navigator.of(context).maybePop(),
+            icon: const Icon(Icons.home_rounded),
+            label: Text(t.shelf),
           ),
+          const SizedBox(width: 4),
           Expanded(
             child: Text(
-              _story.title.of(_settings.lang),
+              _story.title,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: fg, fontSize: 18, fontWeight: FontWeight.w600),
             ),
           ),
-          SegmentedButton<Lang>(
-            style: SegmentedButton.styleFrom(
-              foregroundColor: fg,
-              selectedForegroundColor: deskColor,
-              selectedBackgroundColor: const Color(0xFFFFD34D),
-              visualDensity: VisualDensity.compact,
-            ),
-            showSelectedIcon: false,
-            segments: const [
-              ButtonSegment(value: Lang.th, label: Text('ไทย')),
-              ButtonSegment(value: Lang.en, label: Text('English')),
-            ],
-            selected: {_settings.lang},
-            onSelectionChanged: (s) => _setLang(s.first),
-          ),
-          const SizedBox(width: 4),
           IconButton(
             tooltip: t.autoTurn,
             color: _settings.autoTurn ? const Color(0xFFFFD34D) : fg.withValues(alpha: 0.6),
@@ -357,12 +332,7 @@ class _ReaderScreenState extends State<ReaderScreen> with TickerProviderStateMix
             icon: Icon(_settings.flipSound ? Icons.volume_up_rounded : Icons.volume_off_rounded),
             onPressed: () => setState(() => _settings.flipSound = !_settings.flipSound),
           ),
-          IconButton(
-            tooltip: t.voices,
-            color: fg,
-            icon: const Icon(Icons.record_voice_over_rounded),
-            onPressed: _showVoices,
-          ),
+          IconButton(tooltip: t.voices, color: fg, icon: const Icon(Icons.record_voice_over_rounded), onPressed: _showVoices),
           IconButton(tooltip: t.fromStart, color: fg, icon: const Icon(Icons.first_page_rounded), onPressed: _restart),
           const SizedBox(width: 4),
           FilledButton.icon(
@@ -378,16 +348,49 @@ class _ReaderScreenState extends State<ReaderScreen> with TickerProviderStateMix
 
   Future<void> _showVoices() async {
     _stopReading();
-    final lang = _settings.lang;
-    final t = T(lang);
-    await widget.narrator.voices(lang);
+    final voices = await widget.narrator.voices();
     if (!mounted) return;
-    final chars = _story.characters.values.where((c) => c.id != 'everyone').toList();
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) => SafeArea(
+      builder: (context) => VoicesSheet(story: _story, settings: _settings, narrator: widget.narrator, voices: voices),
+    );
+    widget.narrator.stop();
+  }
+}
+
+/// Lets the reader pick a phone voice for each character and hear it.
+/// Choices are saved in [Settings] and used every time the story is read.
+class VoicesSheet extends StatefulWidget {
+  const VoicesSheet({super.key, required this.story, required this.settings, required this.narrator, required this.voices});
+
+  final Story story;
+  final Settings settings;
+  final Narrator narrator;
+  final List<DeviceVoice> voices;
+
+  @override
+  State<VoicesSheet> createState() => _VoicesSheetState();
+}
+
+class _VoicesSheetState extends State<VoicesSheet> {
+  Future<void> _preview(Character c) async {
+    await widget.narrator.stop();
+    final sample = widget.story.pages
+        .expand((p) => p.lines)
+        .firstWhere((l) => l.who == c.id && !l.moral, orElse: () => Line(c.id, 'Hello, I am ${c.name}.'));
+    await widget.narrator.say(widget.story, sample);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = textFor(widget.settings.uiLang);
+    final n = widget.narrator;
+    String name(DeviceVoice v) => n.label(v, male: t.male, female: t.female);
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
         child: ListView(
           shrinkWrap: true,
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -396,31 +399,54 @@ class _ReaderScreenState extends State<ReaderScreen> with TickerProviderStateMix
             const SizedBox(height: 4),
             Text(t.voicesNote, style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 8),
-            for (final c in chars)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(
-                  backgroundColor: c.color,
-                  child: Text(c.name.of(lang).characters.first, style: const TextStyle(color: Colors.white)),
-                ),
-                title: Text('${c.name.of(lang)} · ${t.voiceType(c.voice)}'),
-                subtitle: Text('${t.phoneVoice}: ${widget.narrator.voiceFor(_story, c, lang)?.name ?? '-'}'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.play_circle_fill_rounded, size: 36),
-                  color: c.color,
-                  onPressed: () async {
-                    await widget.narrator.stop();
-                    final sample = _story.pages
-                        .expand((p) => p.lines[lang] ?? const <Line>[])
-                        .firstWhere((l) => l.who == c.id && !l.moral, orElse: () => Line(c.id, c.name.of(lang)));
-                    await widget.narrator.say(_story, sample, lang);
-                  },
+            for (final c in widget.story.cast)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: c.color,
+                      child: Text(c.name.characters.first, style: const TextStyle(color: Colors.white)),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(c.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                          Text(t.voiceType(c.voice), style: Theme.of(context).textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
+                    DropdownButton<String?>(
+                      value: widget.voices.any((v) => v.name == widget.settings.voiceFor(widget.story.id, c.id))
+                          ? widget.settings.voiceFor(widget.story.id, c.id)
+                          : null,
+                      onChanged: (v) {
+                        setState(() => widget.settings.setVoice(widget.story.id, c.id, v));
+                        _preview(c);
+                      },
+                      items: [
+                        DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text(
+                            '${t.automatic}${n.voiceFor(widget.story, c, automatic: true) == null ? '' : ' (${name(n.voiceFor(widget.story, c, automatic: true)!)})'}',
+                          ),
+                        ),
+                        for (final v in widget.voices) DropdownMenuItem<String?>(value: v.name, child: Text(name(v))),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.play_circle_fill_rounded, size: 36),
+                      color: c.color,
+                      onPressed: () => _preview(c),
+                    ),
+                  ],
                 ),
               ),
           ],
         ),
       ),
     );
-    widget.narrator.stop();
   }
 }

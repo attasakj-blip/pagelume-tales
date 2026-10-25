@@ -26,14 +26,13 @@ class StoryPages extends ChangeNotifier implements PageImageSource {
   final Future<Uint8List> Function(String path) _load;
   final Map<int, ui.Image> _pictures = {};
   final Map<int, ui.Image> _texts = {};
-  Lang _lang = Lang.th;
   (int, int)? _highlight;
   bool _disposed = false;
 
   static Future<Uint8List> _bundle(String path) async => (await rootBundle.load(path)).buffer.asUint8List();
 
   int get pageCount => story.pages.length * 2;
-  Lang get lang => _lang;
+  Size get pageSize => Size(pagePixels.toDouble(), (pagePixels * story.pageAspect).roundToDouble());
 
   @override
   ui.Image? image(int? index) {
@@ -50,16 +49,29 @@ class StoryPages extends ChangeNotifier implements PageImageSource {
       final codec = await ui.instantiateImageCodec(await _load(story.imagePath(p)));
       final frame = await codec.getNextFrame();
       if (_disposed) return;
-      _pictures[p] = frame.image;
+      _pictures[p] = _fitToPage(frame.image);
       notifyListeners();
     }
   }
 
-  void setLang(Lang l) {
-    if (l == _lang) return;
-    _lang = l;
-    _clearTexts();
-    notifyListeners();
+  /// Crops a picture of another shape to the page shape (keeping the middle).
+  ui.Image _fitToPage(ui.Image img) {
+    final size = pageSize;
+    final src = Size(img.width.toDouble(), img.height.toDouble());
+    final fitted = applyBoxFit(BoxFit.cover, src, size);
+    if ((src.aspectRatio - size.aspectRatio).abs() < 0.01) return img;
+    final recorder = ui.PictureRecorder();
+    Canvas(recorder).drawImageRect(
+      img,
+      Alignment.center.inscribe(fitted.source, Offset.zero & src),
+      Offset.zero & size,
+      Paint()..filterQuality = FilterQuality.high,
+    );
+    final pic = recorder.endRecording();
+    final out = pic.toImageSync(size.width.round(), size.height.round());
+    pic.dispose();
+    img.dispose();
+    return out;
   }
 
   /// Highlights line [line] on story page [page], or nothing with null.
@@ -84,9 +96,10 @@ class StoryPages extends ChangeNotifier implements PageImageSource {
   ui.Image _renderText(int p) {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
-    paintTextPage(canvas, const Size.square(pagePixels * 1.0), story, p, _lang, _highlight?.$1 == p ? _highlight!.$2 : null);
+    final size = pageSize;
+    paintTextPage(canvas, size, story, p, _highlight?.$1 == p ? _highlight!.$2 : null);
     final pic = recorder.endRecording();
-    final img = pic.toImageSync(pagePixels, pagePixels);
+    final img = pic.toImageSync(size.width.round(), size.height.round());
     pic.dispose();
     return img;
   }
@@ -107,7 +120,7 @@ const _font = 'Mali';
 
 /// Draws the words of story page [p]: narration as plain paragraphs, speech
 /// with the speaker's name in their colour, the moral in a box.
-void paintTextPage(Canvas canvas, Size size, Story story, int p, Lang lang, int? highlight) {
+void paintTextPage(Canvas canvas, Size size, Story story, int p, int? highlight) {
   final w = size.width;
   canvas.drawRect(Offset.zero & size, Paint()..color = paperColor);
   // A soft frame, like a printed picture book.
@@ -125,11 +138,11 @@ void paintTextPage(Canvas canvas, Size size, Story story, int p, Lang lang, int?
 
   final page = story.pages[p];
   if (page.cover) {
-    _paintCover(canvas, size, story, lang);
+    _paintCover(canvas, size, story);
     return;
   }
 
-  final lines = page.lines[lang] ?? const <Line>[];
+  final lines = page.lines;
   final margin = w * 0.1;
   final textWidth = w - margin * 2;
   final maxHeight = size.height - margin * 2 - w * 0.05;
@@ -138,7 +151,7 @@ void paintTextPage(Canvas canvas, Size size, Story story, int p, Lang lang, int?
   late double gap;
   while (true) {
     gap = fontSize * 0.7;
-    blocks = [for (final l in lines) _block(story, l, lang, fontSize, textWidth)];
+    blocks = [for (final l in lines) _block(story, l, fontSize, textWidth)];
     final total = blocks.fold<double>(0, (s, b) => s + b.height) + gap * math.max(0, blocks.length - 1);
     if (total <= maxHeight || fontSize < w * 0.025) {
       var y = margin + math.max(0, (maxHeight - total) / 2);
@@ -167,7 +180,7 @@ void paintTextPage(Canvas canvas, Size size, Story story, int p, Lang lang, int?
   num.paint(canvas, Offset((w - num.width) / 2, size.height - w * 0.085));
 }
 
-TextPainter _block(Story story, Line l, Lang lang, double fontSize, double width) {
+TextPainter _block(Story story, Line l, double fontSize, double width) {
   final c = story.speaker(l.who);
   final base = TextStyle(fontFamily: _font, fontSize: fontSize, height: 1.45, color: _ink);
   final InlineSpan span;
@@ -179,7 +192,7 @@ TextPainter _block(Story story, Line l, Lang lang, double fontSize, double width
     const q = ('“', '”');
     span = TextSpan(
       children: [
-        TextSpan(text: '${c.name.of(lang)}: ', style: base.copyWith(fontWeight: FontWeight.w600, color: c.color)),
+        TextSpan(text: '${c.name}: ', style: base.copyWith(fontWeight: FontWeight.w600, color: c.color)),
         TextSpan(text: '${q.$1}${l.text}${q.$2}', style: base.copyWith(color: Color.lerp(c.color, _ink, 0.55))),
       ],
     );
@@ -188,7 +201,7 @@ TextPainter _block(Story story, Line l, Lang lang, double fontSize, double width
     ..layout(maxWidth: width);
 }
 
-void _paintCover(Canvas canvas, Size size, Story story, Lang lang) {
+void _paintCover(Canvas canvas, Size size, Story story) {
   final w = size.width;
   TextPainter tp(String s, double fs, Color color, {FontWeight weight = FontWeight.w400}) => TextPainter(
     text: TextSpan(text: s, style: TextStyle(fontFamily: _font, fontSize: fs, color: color, fontWeight: weight, height: 1.3)),
@@ -196,9 +209,9 @@ void _paintCover(Canvas canvas, Size size, Story story, Lang lang) {
     textAlign: TextAlign.center,
   )..layout(maxWidth: w * 0.8);
 
-  final title = tp(story.title.of(lang), w * 0.1, const Color(0xFF7B3FA0), weight: FontWeight.w600);
-  final origin = tp(story.origin.of(lang), w * 0.045, _ink.withValues(alpha: 0.7));
-  final hint = tp(lang == Lang.th ? 'แตะ ▶ เพื่อฟังนิทาน\nหรือปัดเพื่อเปิดหน้าถัดไป' : 'Tap ▶ to hear the story,\nor swipe to turn the page', w * 0.035, _ink.withValues(alpha: 0.55));
+  final title = tp(story.title, w * 0.1, const Color(0xFF7B3FA0), weight: FontWeight.w600);
+  final origin = tp(story.origin, w * 0.045, _ink.withValues(alpha: 0.7));
+  final hint = tp('Tap ▶ to hear the story,\nor swipe to turn the page', w * 0.035, _ink.withValues(alpha: 0.55));
   var y = size.height * 0.3 - title.height / 2;
   title.paint(canvas, Offset((w - title.width) / 2, y));
   y += title.height + w * 0.04;
